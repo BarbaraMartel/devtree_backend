@@ -12,7 +12,7 @@ export const createAccount = async (req: Request, res: Response) => {
     const { email, password } = req.body
     const userExists = await User.findOne({ email })
     if (userExists) {
-        const error = new Error('Un usuario con ese mail ya esta registrado')
+        const error = new Error('Un usuario con ese mail ya está registrado')
         return res.status(409).json({ error: error.message })
     }
 
@@ -32,23 +32,18 @@ export const createAccount = async (req: Request, res: Response) => {
 }
 
 export const login = async (req: Request, res: Response) => {
-
-    // Manejar errores
     let errors = validationResult(req)
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() })
     }
 
     const { email, password } = req.body
-
-    // Revisar si el usuario esta registrado
     const user = await User.findOne({ email })
     if (!user) {
         const error = new Error('El Usuario no existe')
         return res.status(404).json({ error: error.message })
     }
 
-    // Comprobar el password
     const isPasswordCorrect = await checkPassword(password, user.password)
     if (!isPasswordCorrect) {
         const error = new Error('Password Incorrecto')
@@ -56,7 +51,6 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const token = generateJWT({ id: user._id })
-
     res.send(token)
 }
 
@@ -75,7 +69,6 @@ export const updateProfile = async (req: Request, res: Response) => {
             return res.status(409).json({ error: error.message })
         }
 
-        // Actualizar el usuario
         req.user.description = description
         req.user.handle = handle
         req.user.links = links
@@ -113,11 +106,17 @@ export const uploadImage = async (req: Request, res: Response) => {
 export const getUserByHandle = async (req: Request, res: Response) => {
     try {
         const { handle } = req.params
+
+        // Incrementar contador de visitas
+        await User.findOneAndUpdate({ handle }, { $inc: { visits: 1 } })
+
+        // Obtener el usuario para mostrarlo
         const user = await User.findOne({ handle }).select('-_id -__v -email -password')
         if (!user) {
             const error = new Error('El Usuario no existe')
             return res.status(404).json({ error: error.message })
         }
+
         res.json(user)
     } catch (e) {
         const error = new Error('Hubo un error')
@@ -127,11 +126,11 @@ export const getUserByHandle = async (req: Request, res: Response) => {
 
 export const searchByHandle = async (req: Request, res: Response) => {
     try {
-        const { handle } = req.body
-        const userExists = await User.findOne({handle})
-        if(userExists) {
+        const { handle } = req.body
+        const userExists = await User.findOne({ handle })
+        if (userExists) {
             const error = new Error(`${handle} ya está registrado`)
-            return res.status(409).json({error: error.message})
+            return res.status(409).json({ error: error.message })
         }
         res.send(`${handle} está disponible`)
     } catch (e) {
